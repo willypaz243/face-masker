@@ -8,3 +8,18 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Project outputs
+outputs/
+
+# Test images
+test_images/
+
+# Plan
+.plan/
+
+# Lock file
+uv.lock
+
+# Node modules (for basedpyright)
+node_modules/
