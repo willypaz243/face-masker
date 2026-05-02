@@ -75,7 +75,7 @@ class YuNetDetector(FaceDetector):
 
     def __init__(
         self,
-        model_path: str = "",
+        model_path: str = "models/face_detection_yunet_2023mar.onnx",
         input_size: tuple[int, int] = (320, 320),
         conf_threshold: float = 0.6,
         nms_threshold: float = 0.3,
@@ -135,7 +135,9 @@ class DlibDetector(FaceDetector):
         try:
             import dlib  # pyright: ignore[reportMissingImports]
         except ImportError as exc:
-            raise ImportError("dlib no está instalado. Ejecuta: pip install dlib") from exc
+            raise ImportError(
+                "dlib no está instalado. Ejecuta: pip install dlib o uv pip install dlib"
+            ) from exc
 
         self._use_cnn = use_cnn
 

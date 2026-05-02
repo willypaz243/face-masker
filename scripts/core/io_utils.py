@@ -11,21 +11,43 @@ import numpy as np
 
 from .types import DetectionReport
 
+OUTPUT_BASE: str = "outputs"
 
-def generate_output_dir(base_dir: str, prefix: str = "face_detection") -> str:
-    """Genera un directorio de salida con timestamp para historial de detecciones.
+
+def resolve_output_dir(user_path: str) -> str:
+    """Valida y resuelve el directorio de salida.
+
+    - Debe comenzar con 'outputs/'
+    - Si solo se pasa 'outputs', genera un subdirectorio con timestamp
+    - Crea 'outputs/' si no existe
 
     Args:
-        base_dir: Directorio base donde crear la carpeta.
-        prefix: Prefijo del nombre de carpeta.
+        user_path: Ruta proporcionada por el usuario vía --output-dir.
 
     Returns:
-        Ruta completa al directorio generado.
-    """
-    timestamp: str = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path: str = os.path.join(base_dir, f"{prefix}_{timestamp}")
+        Ruta absoluta resuelta al directorio de salida final.
 
-    return output_path
+    Raises:
+        ValueError: Si la ruta no comienza con 'outputs/'.
+    """
+    abs_user: str = os.path.abspath(user_path)
+    abs_base: str = os.path.abspath(OUTPUT_BASE)
+
+    if not (abs_user == abs_base or abs_user.startswith(abs_base + os.sep)):
+        raise ValueError(
+            f"El directorio de salida debe comenzar con '{OUTPUT_BASE}/', recibido: '{user_path}'"
+        )
+
+    os.makedirs(abs_base, exist_ok=True)
+
+    if abs_user == abs_base:
+        timestamp: str = datetime.now().strftime("%Y%m%d_%H%M%S")
+        resolved: str = os.path.join(abs_base, timestamp)
+    else:
+        resolved = abs_user
+
+    os.makedirs(resolved, exist_ok=True)
+    return resolved
 
 
 def write_outputs(

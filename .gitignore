@@ -14,6 +14,7 @@ outputs/
 
 # Test images
 test_images/
+!test_images/Gemini_Generated_Image.png
 
 # Plan
 .plan/

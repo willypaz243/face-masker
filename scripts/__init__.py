@@ -12,7 +12,6 @@ from scripts.core import (
     calculate_coverage,
     create_mask_image,
     draw_result_image,
-    generate_output_dir,
 )
 from scripts.core.detector import HaarDetector
 from scripts.detect_faces_and_mask import main, parse_args
@@ -34,7 +33,6 @@ __all__: list[str] = [
     "calculate_coverage",
     "create_mask_image",
     "draw_result_image",
-    "generate_output_dir",
     "load_cascade_classifier",
     "detect_faces",
     "parse_args",

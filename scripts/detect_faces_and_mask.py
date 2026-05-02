@@ -8,12 +8,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from scripts.core import (
-    DetectionStrategy,
-    generate_output_dir,
-    get_detector,
-    process_image,
-)
+from scripts.core import DetectionStrategy, get_detector, process_image, resolve_output_dir
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -35,12 +30,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-dir",
-        default="outputs",
+        default="outputs/",
         help="Directorio base de salida (por defecto: outputs/)",
     )
     parser.add_argument(
         "--strategy",
-        default=DetectionStrategy.HAAR.value,
+        default=DetectionStrategy.YUNET.value,
         help="Estrategia de detección: haar, yunet, dlib (default: haar)",
     )
     parser.add_argument(
@@ -64,6 +59,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
     try:
+        output_dir: str = resolve_output_dir(args.output_dir)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    try:
         detector_kwargs: dict = {}
         if args.strategy == DetectionStrategy.YUNET.value and args.yunet_model:
             detector_kwargs["model_path"] = args.yunet_model
@@ -73,19 +74,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Error de configuración: {exc}", file=sys.stderr)
         return 1
 
-    final_output_dir: str = generate_output_dir(args.output_dir)
-
     try:
         report = process_image(
             input_path=args.input,
-            output_dir=final_output_dir,
+            output_dir=args.output_dir,
             detector=detector,
         )
     except (FileNotFoundError, ValueError, RuntimeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
-    msg: str = f"Caras encontradas: {report.num_faces} -> {final_output_dir}/"
+    msg: str = f"Caras encontradas: {report.num_faces} -> {output_dir}"
     print(msg)
 
     if len(report.warnings) > 0:

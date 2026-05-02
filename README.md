@@ -1,81 +1,91 @@
-# Face Masker
+# face-masker
 
-Herramienta local de detección y enmascaramiento facial basada en Haar Cascade de OpenCV.
+Herramienta CLI local de detección y enmascaramiento facial basada en Haar Cascade de OpenCV.
 
-## Descripción
-
-Esta herramienta recibe una imagen, detecta una o varias caras, genera una máscara facial básica y produce un reporte JSON con métricas de la detección.
-
-- Detección de rostros frontal con **Haar Cascade** (embebido en OpenCV)
-- Generación de **bounding boxes** sobre las caras detectadas
-- Creación de **máscara** con zonas faciales marcadas
-- Reporte JSON con métricas completas
-- Cero dependencias externas, cero descargas de modelos
+Recibe una imagen como entrada, detecta rostros frontales, genera una máscara con las zonas faciales y produce un reporte JSON con métricas de la detección.
 
 ## Instalación
 
-### Opción 1: Con uv (recomendado)
+### Con uv (recomendado)
+
+[Instalar uv](https://docs.astral.sh/uv/getting-started/installation/) → [Guía de entornos](https://docs.astral.sh/uv/guides/environments/)
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-cd face-masker
-uv venv
-uv sync
+uv venv && uv sync
 ```
 
-### Opción 2: Con pip tradicional
+### Con pip
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
 ## Uso
 
-### Generar imagen de prueba
-
 ```bash
-# Con uv
-uv run python scripts/generate_test_image.py
+# uv
+uv run python scripts/detect_faces_and_mask.py --input path/to/photo.jpg
 
-# Con pip (venv activo)
-python scripts/generate_test_image.py
-```
+# pip (venv activo)
+source .venv/bin/activate
+python scripts/detect_faces_and_mask.py --input path/to/photo.jpg
 
-Esto genera `test_synthetic.jpg` (500x500px con círculos decorativos).
-
-### Ejecutar la herramienta de detección
-
-```bash
-# Con uv
-uv run python scripts/detect_faces_and_mask.py --input test_synthetic.jpg --output-dir outputs/test1
-
-# Con pip (venv activo)
-python scripts/detect_faces_and_mask.py --input test_synthetic.jpg --output-dir outputs/test1
-
-# Con imagen real
-uv run python scripts/detect_faces_and_mask.py --input foto.jpg --output-dir outputs/real_test
+# directorio de salida personalizado
+python scripts/detect_faces_and_mask.py --input path/to/photo.jpg --output-dir outputs/my_folder
 ```
 
 ### Argumentos
 
-| Argumento | Requerido | Por defecto | Descripción |
-|---|---|---|---|
-| `--input` | Sí | — | Ruta a la imagen de entrada |
-| `--output-dir` | No | `outputs/face_detection` | Directorio donde guardar los outputs |
+| Argumento      | Requerido | Por defecto | Descripción                          |
+| -------------- | --------- | ----------- | ------------------------------------ |
+| `--input`      | Sí        | —           | Ruta a la imagen de entrada          |
+| `--output-dir` | No        | `outputs`   | Directorio de salida (debe comenzar con `outputs/`) |
+
+### Reglas de `--output-dir`
+
+| Entrada | Resultado |
+|---|---|
+| `outputs` | Crea `outputs/YYYYMMDD_HHMMSS/` con timestamp |
+| `outputs/mi_carpeta` | Usa `outputs/mi_carpeta` directamente |
+| `carpeta/otra` | **Error**: debe comenzar con `outputs/` |
+
+El directorio `outputs/` se crea automáticamente si no existe.
+
+## Extra
+
+### Estrategias de detección
+
+El script soporta tres estrategias. Se seleccionan con `--strategy`:
+
+| Estrategia        | Descripción                       | Requiere instalación extra                      |
+| ----------------- | --------------------------------- | ----------------------------------------------- |
+| `haar`            | Haar Cascade, embebido en OpenCV  | No                                              |
+| `yunet` (default) | YuNet (OpenCV DNN), más preciso   | No                                              |
+| `dlib`            | HOG + CNN de dlib, el más preciso | Sí (`pip install dlib` o `uv pip install dlib`) |
+
+```bash
+# Haar (por defecto)
+uv run python scripts/detect_faces_and_mask.py --input path/to/photo.jpg
+
+# YuNet
+uv run python scripts/detect_faces_and_mask.py --input path/to/photo.jpg --strategy yunet
+
+# Dlib (requiere: pip install dlib o uv pip install dlib)
+uv run python scripts/detect_faces_and_mask.py --input path/to/photo.jpg --strategy dlib
+```
 
 ## Outputs
 
-La herramienta genera en el directorio de salida:
+Se generan tres archivos en el directorio de salida:
 
-| Archivo | Formato | Descripción |
-|---|---|---|
-| `detected_faces.jpg` | JPG | Imagen original con cajas verdes sobre las caras |
-| `mask.png` | PNG | Máscara negra con zonas faciales en blanco |
-| `report.json` | JSON | Reporte con métricas de la detección |
+| Archivo              | Formato | Descripción                                                 |
+| -------------------- | ------- | ----------------------------------------------------------- |
+| `detected_faces.jpg` | JPG     | Imagen original con cajas verdes sobre las caras detectadas |
+| `mask.png`           | PNG     | Máscara negra con zonas faciales en blanco                  |
+| `report.json`        | JSON    | Reporte con métricas de la detección                        |
 
-### Estructura del reporte JSON
+### Reporte JSON
 
 ```json
 {
@@ -91,63 +101,29 @@ La herramienta genera en el directorio de salida:
 }
 ```
 
-| Campo | Tipo | Descripción |
-|---|---|---|
-| `face_detected` | boolean | Si al menos una cara fue detectada |
-| `num_faces` | int | Cantidad de caras detectadas |
-| `bounding_boxes` | array | Lista de cajas `[x, y, w, h]` por cara |
-| `image_size` | array | `[ancho, alto]` de la imagen original |
-| `mask_coverage_pct` | float | Porcentaje de área cubierta por la máscara |
-| `warnings` | array | Lista de advertencias |
+## Tests
 
-## Ejecutar tests
+### Ejecutar
 
 ```bash
-# Con uv
 uv run pytest tests/ -v
-
-# Con pip (venv activo)
-pytest tests/ -v
 ```
 
-## Calidad de código
+### Qué se prueba
+
+| Categoría           | Qué cubre                                                                                          |
+| ------------------- | -------------------------------------------------------------------------------------------------- |
+| **Funciones puras** | `draw_result_image`, `create_mask_image`, `calculate_coverage` — formas, píxeles, cobertura        |
+| **Reporte**         | `build_report` con y sin caras, estructura de `to_dict()`                                          |
+| **Estrategias**     | Cada estrategia (`haar`, `yunet`, `dlib`) ejecuta detección + pipeline completo                    |
+| **Errores**         | Archivo inexistente (`FileNotFoundError`), formato inválido (`ValueError`), estrategia desconocida |
+
+### Ejecutar solo una estrategia
 
 ```bash
-# Formateo con Ruff
-ruff format .
-
-# Linting con Ruff
-ruff check .
-
-# Type checking con basedpyright
-basedpyright
+uv run pytest tests/ -v -k "haar"
+uv run pytest tests/ -v -k "yunet"
+pip install dlib # o uv pip install dlib
+uv run pytest tests/ -v -k "dlib"
 ```
 
-## Principios aplicados
-
-- **SOLID**: Responsabilidades separadas, funciones puras, datos inmutables con `frozen=True`
-- **KISS**: Cero clases innecesarias, flujo lineal, configuración simple
-- **Máximo 2 niveles de anidación**: Early returns y extracción de funciones
-- **Tipado estricto**: Todas las variables, parámetros y propiedades con tipo explícito
-
-## Limitaciones
-
-- Haar Cascade detecta **rostros frontales** con buena iluminación
-- No funciona bien con perfiles laterales, objetos o mascotas
-- La precisión es menor que modelos basados en deep learning (MTCNN, YOLO)
-- El clasificador XML viene embebido en `opencv-python` (cero descargas externas)
-
-## Estructura del proyecto
-
-```
-face-masker/
-├── pyproject.toml          # Dependencias y configuración de herramientas
-├── requirements.txt        # Compatibilidad con pip
-├── scripts/
-│   ├── detect_faces_and_mask.py   # CLI principal
-│   └── generate_test_image.py     # Generador de imagen sintética
-├── tests/
-│   └── test_detection.py          # Tests automatizados
-├── outputs/                    # Carpeta generada al ejecutar
-└── README.md
-```

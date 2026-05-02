@@ -3,7 +3,6 @@
 ## Quick facts
 - **Package manager**: `uv` (primary). Venv at `.venv`. Run everything with `uv run <cmd>`.
 - **Entry point**: `detect-faces` CLI (`scripts/detect_faces_and_mask.py`)
-- **Test image**: `uv run python scripts/generate_test_image.py` → `test_synthetic.jpg`
 
 ## Tool config (verified from pyproject.toml)
 - **Ruff**: double quotes, indent spaces, ignore E501, rules: E/F/W/I/N/B/UP/C9
@@ -22,7 +21,6 @@ uv run pytest tests/ -v     # test
 ```
 scripts/
 ├── detect_faces_and_mask.py   # CLI entry point (thin wrapper, ~60 lines)
-├── generate_test_image.py     # Test image generator
 ├── __init__.py                # Backward compat re-exports for tests
 └── core/
     ├── __init__.py            # Core re-exports
@@ -30,7 +28,7 @@ scripts/
     ├── detector.py            # FaceDetector base + Haar/YuNet/Dlib strategies + registry
     ├── image_ops.py           # draw_result_image(), create_mask_image()
     ├── metrics.py             # calculate_coverage(), build_report()
-    ├── io_utils.py            # generate_output_dir(), write_outputs()
+    ├── io_utils.py            # write_outputs()
     └── pipeline.py            # process_image() orchestration
 ```
 
@@ -59,7 +57,7 @@ uv run detect-faces --input test.jpg --strategy dlib
 `opencv-python>=4.10` only. `numpy` is a transitive dep (not listed in pyproject.toml).
 
 ## New strategy dependencies
-| Strategy | Dep | Install |
-|---|---|---|
-| yunet | None (OpenCV DNN included) | — |
-| dlib | `dlib>=20.0` | `pip install dlib` |
+| Strategy | Dep                        | Install            |
+| -------- | -------------------------- | ------------------ |
+| yunet    | None (OpenCV DNN included) | —                  |
+| dlib     | `dlib>=20.0`               | `pip install dlib` |

@@ -1,10 +1,13 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "face-masker"
 version = "0.1.0"
 description = "Herramienta local de detección y enmascaramiento facial"
 requires-python = ">=3.10"
 dependencies = [
-    "dlib>=20.0.1",
     "opencv-python>=4.10",
 ]
 
