@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Herramienta local de detección y enmascaramiento facial"
 requires-python = ">=3.10"
 dependencies = [
+    "dlib>=20.0.1",
     "opencv-python>=4.10",
 ]
 
@@ -29,6 +30,9 @@ include = ["scripts", "tests"]
 venvPath = "."
 venv = ".venv"
 reportMissingTypeStubs = false
+
+[tool.setuptools.packages.find]
+include = ["scripts*"]
 
 [dependency-groups]
 dev = [

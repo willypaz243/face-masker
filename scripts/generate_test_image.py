@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generador de imágenes sintéticas para pruebas."""
 
 from __future__ import annotations

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Pruebas automatizadas para la herramienta de detección facial."""
 
 from __future__ import annotations
@@ -15,19 +14,18 @@ import cv2
 import numpy as np
 import pytest
 
-from scripts.detect_faces_and_mask import (
+from scripts.core import (
     DetectionReport,
     FaceBox,
     build_report,
     calculate_coverage,
     create_mask_image,
-    detect_faces,
     draw_result_image,
     generate_output_dir,
-    load_cascade_classifier,
-    parse_args,
     process_image,
 )
+from scripts.core.detector import HaarDetector, get_detector
+from scripts.detect_faces_and_mask import parse_args
 
 TEST_IMAGES_DIR: str = os.path.join(os.path.dirname(__file__), "..", "test_images")
 
@@ -37,32 +35,36 @@ def _get_test_image_path(filename: str) -> str:
     return os.path.join(TEST_IMAGES_DIR, filename)
 
 
+# --- Helpers ---
+
+HAAR_DETECTOR: HaarDetector = HaarDetector()
+
+
 # --- Pruebas de funciones puras ---
 
 
 def test_load_cascade_classifier_returns_valid_classifer() -> None:
     """Verifica que el clasificador se carga correctamente."""
-    classifier = load_cascade_classifier()
-    assert not classifier.empty()
+    detector = get_detector("haar")
+    assert hasattr(detector, "name")
+    assert detector.name == "haar"
 
 
 def test_detect_faces_returns_empty_list_on_blank_image() -> None:
     """Una imagen en blanco no debe detectar caras."""
     blank: np.ndarray = np.zeros((100, 100), dtype=np.uint8)
-    classifier = load_cascade_classifier()
 
-    faces = detect_faces(blank, classifier)
+    faces = HAAR_DETECTOR.detect(blank)
 
     assert isinstance(faces, list)
     assert len(faces) == 0
 
 
 def test_detect_faces_returns_list_of_facebox() -> None:
-    """detect_faces debe retornar una lista de FaceBox."""
+    """detect debe retornar una lista de FaceBox."""
     blank: np.ndarray = np.zeros((100, 100), dtype=np.uint8)
-    classifier = load_cascade_classifier()
 
-    faces = detect_faces(blank, classifier)
+    faces = HAAR_DETECTOR.detect(blank)
 
     for face in faces:
         assert isinstance(face, FaceBox)
@@ -220,6 +222,20 @@ def test_parse_args_custom_output_dir() -> None:
     assert args.output_dir == "custom/out"
 
 
+def test_parse_args_default_strategy_haar() -> None:
+    """Verifica que --strategy default es 'haar'."""
+    args = parse_args(["--input", "test.jpg"])
+
+    assert args.strategy == "haar"
+
+
+def test_parse_args_custom_strategy() -> None:
+    """Verifica que se puede especificar una estrategia personalizada."""
+    args = parse_args(["--input", "test.jpg", "--strategy", "yunet"])
+
+    assert args.strategy == "yunet"
+
+
 # --- Pruebas de integración con imágenes reales ---
 
 
@@ -230,7 +246,7 @@ def test_process_image_with_gates_linus() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         out_dir = os.path.join(tmpdir, "output")
 
-        report = process_image(img_path, out_dir)
+        report = process_image(img_path, out_dir, HAAR_DETECTOR)
 
         assert isinstance(report, DetectionReport)
         assert os.path.exists(os.path.join(out_dir, "detected_faces.jpg"))
@@ -245,7 +261,7 @@ def test_process_image_with_gemini_generated() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         out_dir = os.path.join(tmpdir, "output")
 
-        report = process_image(img_path, out_dir)
+        report = process_image(img_path, out_dir, HAAR_DETECTOR)
 
         assert isinstance(report, DetectionReport)
         assert os.path.exists(os.path.join(out_dir, "detected_faces.jpg"))
@@ -260,7 +276,7 @@ def test_process_image_with_test_random_image() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         out_dir = os.path.join(tmpdir, "output")
 
-        report = process_image(img_path, out_dir)
+        report = process_image(img_path, out_dir, HAAR_DETECTOR)
 
         assert isinstance(report, DetectionReport)
         assert os.path.exists(os.path.join(out_dir, "detected_faces.jpg"))
@@ -275,7 +291,7 @@ def test_process_image_creates_valid_json() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         out_dir = os.path.join(tmpdir, "output")
 
-        process_image(img_path, out_dir)
+        process_image(img_path, out_dir, HAAR_DETECTOR)
 
         json_path = os.path.join(out_dir, "report.json")
 
@@ -296,7 +312,7 @@ def test_process_image_with_nonexistent_file() -> None:
         out_dir = os.path.join(tmpdir, "output")
 
         with pytest.raises(FileNotFoundError):
-            process_image("/no/existe/imagen.jpg", out_dir)
+            process_image("/no/existe/imagen.jpg", out_dir, HAAR_DETECTOR)
 
 
 def test_process_image_with_invalid_image_format() -> None:
@@ -310,7 +326,7 @@ def test_process_image_with_invalid_image_format() -> None:
         out_dir = os.path.join(tmpdir, "output")
 
         with pytest.raises(ValueError):
-            process_image(invalid_path, out_dir)
+            process_image(invalid_path, out_dir, HAAR_DETECTOR)
 
 
 def test_integration_with_real_haar_cascade() -> None:
@@ -320,7 +336,7 @@ def test_integration_with_real_haar_cascade() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         out_dir = os.path.join(tmpdir, "output")
 
-        report = process_image(img_path, out_dir)
+        report = process_image(img_path, out_dir, HAAR_DETECTOR)
 
         assert isinstance(report, DetectionReport)
         assert os.path.exists(os.path.join(out_dir, "report.json"))
@@ -364,3 +380,27 @@ def test_main_creates_timestamped_output_folder() -> None:
 
         assert len(subdirs) >= 1
         assert any(d.startswith("face_detection_") for d in subdirs)
+
+
+# --- Pruebas de estrategia ---
+
+
+def test_get_detector_haar_returns_valid_detector() -> None:
+    """get_detector con 'haar' retorna un detector funcional."""
+    detector = get_detector("haar")
+    assert detector.name == "haar"
+
+
+def test_get_detector_unknown_raises_value_error() -> None:
+    """get_detector con estrategia inválida levanta ValueError."""
+    with pytest.raises(ValueError, match="no soportada"):
+        get_detector("invalid_strategy")
+
+
+def test_detection_strategy_enum_values() -> None:
+    """Valida los valores del enum DetectionStrategy."""
+    from scripts.core.types import DetectionStrategy
+
+    assert DetectionStrategy.HAAR.value == "haar"
+    assert DetectionStrategy.YUNET.value == "yunet"
+    assert DetectionStrategy.DLIB.value == "dlib"
