@@ -1,0 +1,38 @@
+[project]
+name = "face-masker"
+version = "0.1.0"
+description = "Herramienta local de detección y enmascaramiento facial"
+requires-python = ">=3.10"
+dependencies = [
+    "opencv-python>=4.10",
+]
+
+[project.scripts]
+detect-faces = "scripts.detect_faces_and_mask:main"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "B", "UP", "C9"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.basedpyright]
+pythonVersion = "3.10"
+typeCheckingMode = "basic"
+include = ["scripts", "tests"]
+venvPath = "."
+venv = ".venv"
+reportMissingTypeStubs = false
+
+[dependency-groups]
+dev = [
+    "basedpyright>=1.39.3",
+    "pytest>=9.0.3",
+    "ruff>=0.15.12",
+]
